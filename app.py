@@ -65,7 +65,9 @@ LANGUAGES = {
 # Load Translation Model
 # ==========================================
 
-@lru_cache(maxsize=4)
+# Keep only one model in memory at a time.
+# This helps reduce RAM usage on Render.
+@lru_cache(maxsize=1)
 def get_translator(language_code):
 
     model_name = LANGUAGES[language_code]["model"]
