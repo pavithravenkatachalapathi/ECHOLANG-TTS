@@ -1,0 +1,6 @@
+gTTS
+transformers
+torch
+sentencepiece
+sacremoses
+flask
