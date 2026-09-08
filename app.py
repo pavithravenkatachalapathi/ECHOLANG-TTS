@@ -4,6 +4,7 @@ from gtts import gTTS
 from pathlib import Path
 from functools import lru_cache
 import uuid
+import os
 
 
 # ==========================================
@@ -21,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 AUDIO_DIR = BASE_DIR / "static" / "audio"
 
-# Create audio folder if it does not exist
+# Create audio directory if it does not exist
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -94,7 +95,6 @@ def translate_text(text, language_code):
 
     tokenizer, model = get_translator(language_code)
 
-    # Convert English text into model input
     inputs = tokenizer(
         text,
         return_tensors="pt",
@@ -102,13 +102,11 @@ def translate_text(text, language_code):
         truncation=True
     )
 
-    # Generate translation
     translated = model.generate(
         **inputs,
         max_length=512
     )
 
-    # Convert model output into text
     translated_text = tokenizer.decode(
         translated[0],
         skip_special_tokens=True
@@ -134,9 +132,9 @@ def home():
 
     error_message = None
 
-    # --------------------------------------
-    # Handle POST Request
-    # --------------------------------------
+    # ======================================
+    # POST Request
+    # ======================================
 
     if request.method == "POST":
 
@@ -151,7 +149,7 @@ def home():
         ).strip()
 
         # ----------------------------------
-        # Validate Text
+        # Validate Input
         # ----------------------------------
 
         if not text:
@@ -159,10 +157,6 @@ def home():
             error_message = (
                 "Please enter some English text."
             )
-
-        # ----------------------------------
-        # Validate Language
-        # ----------------------------------
 
         elif language not in LANGUAGES:
 
@@ -174,19 +168,14 @@ def home():
 
             try:
 
-                # ----------------------------------
-                # Get Language Information
-                # ----------------------------------
-
                 language_info = LANGUAGES[language]
 
                 language_name = language_info["name"]
-
                 language_flag = language_info["flag"]
 
-                # ----------------------------------
+                # ==============================
                 # Translation
-                # ----------------------------------
+                # ==============================
 
                 print("\n========================================")
                 print("Translating text...")
@@ -203,9 +192,9 @@ def home():
 
                 print("Translation completed!")
 
-                # ----------------------------------
+                # ==============================
                 # Text To Speech
-                # ----------------------------------
+                # ==============================
 
                 print("\nGenerating speech...")
 
@@ -225,7 +214,7 @@ def home():
                     str(filepath)
                 )
 
-                # Browser uses this path
+                # Browser audio path
                 audio_file = f"audio/{filename}"
 
                 print("Audio generated successfully!")
@@ -236,18 +225,12 @@ def home():
 
             except Exception as e:
 
-                # ----------------------------------
-                # Error Handling
-                # ----------------------------------
-
                 print("\n========================================")
                 print("ERROR")
                 print("========================================")
 
                 print(
-                    type(e).__name__,
-                    ":",
-                    str(e)
+                    f"{type(e).__name__}: {str(e)}"
                 )
 
                 print("========================================")
@@ -258,10 +241,9 @@ def home():
                     "Please try again."
                 )
 
-
-    # --------------------------------------
-    # Render HTML
-    # --------------------------------------
+    # ======================================
+    # Render Template
+    # ======================================
 
     return render_template(
         "index.html",
@@ -283,10 +265,34 @@ def home():
 
 
 # ==========================================
-# Run Application
+# Health Check Route
+# ==========================================
+
+@app.route("/health")
+def health():
+
+    return {
+        "status": "ok",
+        "application": "EchoLang",
+        "message": "EchoLang server is running"
+    }
+
+
+# ==========================================
+# Application Entry Point
 # ==========================================
 
 if __name__ == "__main__":
+
+    # Render provides PORT automatically.
+    # Local machine uses 5000.
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
 
     print("\n========================================")
     print("       EchoLang - Multilingual TTS")
@@ -294,20 +300,16 @@ if __name__ == "__main__":
 
     print(f"Project folder : {BASE_DIR}")
     print(f"Audio folder   : {AUDIO_DIR}")
+    print(f"Audio exists   : {AUDIO_DIR.exists()}")
+    print(f"Running port   : {port}")
 
-    print(
-        "Audio folder exists:",
-        AUDIO_DIR.exists()
-    )
-
-    print(
-        "Open in browser: http://127.0.0.1:5000"
-    )
-
+    print("========================================")
+    print("Local URL: http://127.0.0.1:5000")
+    print("Health URL: /health")
     print("========================================\n")
 
     app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=True
+        host="0.0.0.0",
+        port=port,
+        debug=False
     )

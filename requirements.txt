@@ -1,6 +1,7 @@
-gTTS
+Flask
 transformers
 torch
 sentencepiece
+gTTS
 sacremoses
-flask
+gunicorn
