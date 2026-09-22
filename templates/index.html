@@ -10,12 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>EchoLang | Multilingual Text-to-Speech</title>
-
-    <meta
-        name="description"
-        content="Translate English text and listen to it in your preferred language with EchoLang."
-    >
+    <title>EchoLang - Multilingual Text to Speech</title>
 
     <link
         rel="stylesheet"
@@ -28,9 +23,9 @@
 <body>
 
 
-<!-- =========================================
+<!-- =====================================================
      NAVBAR
-========================================= -->
+===================================================== -->
 
 <nav class="navbar">
 
@@ -42,7 +37,9 @@
                 E
             </div>
 
-            <span>EchoLang</span>
+            <span>
+                EchoLang
+            </span>
 
         </div>
 
@@ -51,7 +48,7 @@
 
             <span class="status-dot"></span>
 
-            AI Language Studio
+            Translation Service Online
 
         </div>
 
@@ -61,33 +58,33 @@
 
 
 
-<!-- =========================================
+<!-- =====================================================
      HERO
-========================================= -->
+===================================================== -->
 
 <section class="hero">
 
     <div class="hero-content">
 
         <div class="hero-badge">
-            <span>✦</span>
-            AI-powered translation & speech
+
+            🌐 Multilingual AI Language Assistant
+
         </div>
 
 
         <h1>
 
-            Words that
-
-            <span>sound like you.</span>
+            Translate.
+            <span>Listen. Connect.</span>
 
         </h1>
 
 
         <p>
 
-            Translate English into your preferred language
-            and listen to the result naturally with EchoLang.
+            Convert English text into multiple languages
+            and listen to the translated result instantly.
 
         </p>
 
@@ -97,9 +94,9 @@
 
 
 
-<!-- =========================================
-     MAIN APP
-========================================= -->
+<!-- =====================================================
+     MAIN
+===================================================== -->
 
 <main class="main-wrapper">
 
@@ -114,11 +111,11 @@
             <div>
 
                 <h2>
-                    Translation Studio
+                    Text Translator
                 </h2>
 
                 <p>
-                    Write your text, choose a language and let EchoLang speak.
+                    Enter English text and select your target language.
                 </p>
 
             </div>
@@ -136,27 +133,55 @@
 
 
 
+        <!-- ERROR MESSAGE -->
+
+        {% if error_message %}
+
+        <div class="error-message">
+
+            <div class="error-icon">
+                !
+            </div>
+
+            <div>
+
+                <strong>
+                    Processing Error
+                </strong>
+
+                <p>
+                    {{ error_message }}
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+
+        <!-- FORM -->
+
         <form
             method="POST"
-            id="translateForm"
-            onsubmit="startTranslation()"
+            action="/"
+            id="translatorForm"
         >
 
 
-            <!-- =================================
-                 TEXT INPUT
-            ================================= -->
+            <!-- INPUT -->
 
             <div class="input-section">
 
                 <div class="label-row">
 
                     <label for="text">
-                        Your English text
+                        English Text
                     </label>
 
                     <span id="charCount">
-                        0 / 5000
+                        0 / 3000
                     </span>
 
                 </div>
@@ -167,22 +192,21 @@
                     <textarea
                         id="text"
                         name="text"
-                        maxlength="5000"
+                        maxlength="3000"
                         placeholder="Type or paste your English text here..."
-                        required
-                    >{{ text if text else '' }}</textarea>
+                    >{{ text }}</textarea>
 
 
                     <div class="textarea-footer">
 
                         <span>
-                            ✎ English input
+                            Source language: English
                         </span>
 
                         <button
                             type="button"
                             class="clear-button"
-                            onclick="clearText()"
+                            id="clearButton"
                         >
                             Clear
                         </button>
@@ -195,19 +219,19 @@
 
 
 
-            <!-- =================================
-                 LANGUAGE
-            ================================= -->
+            <!-- LANGUAGE -->
 
             <div class="language-section">
 
-                <label for="language">
-                    Translate to
+                <label>
+                    Select Target Language
                 </label>
 
 
                 <div class="language-grid">
 
+
+                    <!-- HINDI -->
 
                     <label class="language-option">
 
@@ -216,32 +240,37 @@
                             name="language"
                             value="hi"
                             {% if language == "hi" %}checked{% endif %}
-                            required
                         >
 
                         <div class="language-card">
 
-                            <span class="flag">
+                            <div class="flag">
                                 🇮🇳
-                            </span>
+                            </div>
 
                             <div>
 
-                                <strong>Hindi</strong>
+                                <strong>
+                                    Hindi
+                                </strong>
 
-                                <small>हिन्दी</small>
+                                <small>
+                                    हिन्दी
+                                </small>
 
                             </div>
 
-                            <span class="check">
+                            <div class="check">
                                 ✓
-                            </span>
+                            </div>
 
                         </div>
 
                     </label>
 
 
+
+                    <!-- SPANISH -->
 
                     <label class="language-option">
 
@@ -254,27 +283,33 @@
 
                         <div class="language-card">
 
-                            <span class="flag">
+                            <div class="flag">
                                 🇪🇸
-                            </span>
+                            </div>
 
                             <div>
 
-                                <strong>Spanish</strong>
+                                <strong>
+                                    Spanish
+                                </strong>
 
-                                <small>Español</small>
+                                <small>
+                                    Español
+                                </small>
 
                             </div>
 
-                            <span class="check">
+                            <div class="check">
                                 ✓
-                            </span>
+                            </div>
 
                         </div>
 
                     </label>
 
 
+
+                    <!-- FRENCH -->
 
                     <label class="language-option">
 
@@ -287,27 +322,33 @@
 
                         <div class="language-card">
 
-                            <span class="flag">
+                            <div class="flag">
                                 🇫🇷
-                            </span>
+                            </div>
 
                             <div>
 
-                                <strong>French</strong>
+                                <strong>
+                                    French
+                                </strong>
 
-                                <small>Français</small>
+                                <small>
+                                    Français
+                                </small>
 
                             </div>
 
-                            <span class="check">
+                            <div class="check">
                                 ✓
-                            </span>
+                            </div>
 
                         </div>
 
                     </label>
 
 
+
+                    <!-- GERMAN -->
 
                     <label class="language-option">
 
@@ -320,21 +361,25 @@
 
                         <div class="language-card">
 
-                            <span class="flag">
+                            <div class="flag">
                                 🇩🇪
-                            </span>
+                            </div>
 
                             <div>
 
-                                <strong>German</strong>
+                                <strong>
+                                    German
+                                </strong>
 
-                                <small>Deutsch</small>
+                                <small>
+                                    Deutsch
+                                </small>
 
                             </div>
 
-                            <span class="check">
+                            <div class="check">
                                 ✓
-                            </span>
+                            </div>
 
                         </div>
 
@@ -347,9 +392,7 @@
 
 
 
-            <!-- =================================
-                 ACTION
-            ================================= -->
+            <!-- BUTTON -->
 
             <div class="action-area">
 
@@ -359,12 +402,8 @@
                     id="translateButton"
                 >
 
-                    <span id="buttonIcon">
-                        ✦
-                    </span>
-
                     <span id="buttonText">
-                        Translate & Speak
+                        Translate & Generate Audio
                     </span>
 
                     <span class="button-arrow">
@@ -374,11 +413,12 @@
                 </button>
 
 
-                <p class="action-note">
+                <div class="action-note">
 
-                    Translation may take a few moments while the AI model processes your text.
+                    Translation and speech generation may take
+                    a few seconds.
 
-                </p>
+                </div>
 
             </div>
 
@@ -387,9 +427,7 @@
 
 
 
-        <!-- =================================
-             LOADING
-        ================================= -->
+        <!-- LOADING -->
 
         <div
             class="loading-card"
@@ -401,11 +439,11 @@
             <div>
 
                 <strong>
-                    Creating your translation...
+                    Processing your request...
                 </strong>
 
                 <p>
-                    Translating text and generating natural speech.
+                    Translating text and generating audio.
                 </p>
 
             </div>
@@ -414,9 +452,7 @@
 
 
 
-        <!-- =================================
-             RESULT
-        ================================= -->
+        <!-- RESULT -->
 
         {% if translated_text %}
 
@@ -427,12 +463,15 @@
 
                 <div>
 
-                    <span class="result-label">
+                    <div class="result-label">
                         TRANSLATION RESULT
-                    </span>
+                    </div>
 
                     <h2>
-                        {{ language_flag }} {{ language_name }}
+
+                        {{ language_flag }}
+                        {{ language_name }}
+
                     </h2>
 
                 </div>
@@ -441,24 +480,20 @@
                 <button
                     type="button"
                     class="copy-button"
-                    onclick="copyTranslation()"
                     id="copyButton"
                 >
-
-                    <span>▣</span>
-
                     Copy
-
                 </button>
 
             </div>
 
 
-            <!-- TRANSLATED TEXT -->
+            <div
+                class="translation-box"
+                id="translationText"
+            >
 
-            <div class="translation-box">
-
-                <p id="translatedText">
+                <p>
                     {{ translated_text }}
                 </p>
 
@@ -480,18 +515,17 @@
                 <div class="audio-info">
 
                     <strong>
-                        Listen to translation
+                        Generated Speech
                     </strong>
 
                     <span>
-                        Natural text-to-speech audio
+                        {{ language_name }} audio
                     </span>
 
                 </div>
 
 
                 <audio
-                    id="audioPlayer"
                     controls
                     preload="metadata"
                 >
@@ -501,7 +535,8 @@
                         type="audio/mpeg"
                     >
 
-                    Your browser does not support audio.
+                    Your browser does not support
+                    audio playback.
 
                 </audio>
 
@@ -518,16 +553,16 @@
     </div>
 
 
-    <!-- =========================================
-         FEATURES
-    ========================================= -->
+
+    <!-- FEATURES -->
 
     <div class="features">
+
 
         <div class="feature">
 
             <div class="feature-icon">
-                🌍
+                🌐
             </div>
 
             <div>
@@ -537,33 +572,13 @@
                 </strong>
 
                 <p>
-                    Translate across multiple languages.
+                    Supports four target languages.
                 </p>
 
             </div>
 
         </div>
 
-
-        <div class="feature">
-
-            <div class="feature-icon">
-                ⚡
-            </div>
-
-            <div>
-
-                <strong>
-                    AI Powered
-                </strong>
-
-                <p>
-                    Neural machine translation models.
-                </p>
-
-            </div>
-
-        </div>
 
 
         <div class="feature">
@@ -575,16 +590,39 @@
             <div>
 
                 <strong>
-                    Natural Speech
+                    Text to Speech
                 </strong>
 
                 <p>
-                    Listen to your translated text.
+                    Listen to translated content.
                 </p>
 
             </div>
 
         </div>
+
+
+
+        <div class="feature">
+
+            <div class="feature-icon">
+                ⚡
+            </div>
+
+            <div>
+
+                <strong>
+                    Simple & Fast
+                </strong>
+
+                <p>
+                    Easy browser-based interface.
+                </p>
+
+            </div>
+
+        </div>
+
 
     </div>
 
@@ -593,15 +631,26 @@
 
 
 
-<!-- =========================================
+<!-- =====================================================
      FOOTER
-========================================= -->
+===================================================== -->
 
 <footer>
 
     <div>
 
-        <strong>EchoLang</strong>
+        <span>
+            © 2026
+        </span>
+
+        <strong>
+            EchoLang
+        </strong>
+
+    </div>
+
+
+    <div>
 
         <span>
             Multilingual Text-to-Speech
@@ -609,134 +658,233 @@
 
     </div>
 
-
-    <span>
-        Built with Python · Flask · AI
-    </span>
-
 </footer>
 
 
 
-<!-- =========================================
+<!-- =====================================================
      JAVASCRIPT
-========================================= -->
+===================================================== -->
 
 <script>
 
 
-// ==========================================
-// Character Counter
-// ==========================================
-
 const textArea =
     document.getElementById("text");
+
 
 const charCount =
     document.getElementById("charCount");
 
 
-function updateCounter() {
+const clearButton =
+    document.getElementById("clearButton");
 
-    const length =
-        textArea.value.length;
+
+const form =
+    document.getElementById("translatorForm");
+
+
+const loadingCard =
+    document.getElementById("loadingCard");
+
+
+const translateButton =
+    document.getElementById("translateButton");
+
+
+const buttonText =
+    document.getElementById("buttonText");
+
+
+function updateCharacterCount() {
+
+    if (!textArea || !charCount) {
+        return;
+    }
 
     charCount.textContent =
-        `${length} / 5000`;
+        `${textArea.value.length} / 3000`;
 
 }
 
 
-textArea.addEventListener(
-    "input",
-    updateCounter
-);
+if (textArea) {
 
+    textArea.addEventListener(
+        "input",
+        updateCharacterCount
+    );
 
-updateCounter();
-
-
-
-// ==========================================
-// Clear Text
-// ==========================================
-
-function clearText() {
-
-    textArea.value = "";
-
-    updateCounter();
-
-    textArea.focus();
+    updateCharacterCount();
 
 }
 
 
 
-// ==========================================
-// Loading State
-// ==========================================
+if (clearButton) {
 
-function startTranslation() {
+    clearButton.addEventListener(
+        "click",
+        function () {
 
-    const button =
-        document.getElementById("translateButton");
+            textArea.value = "";
 
-    const buttonText =
-        document.getElementById("buttonText");
+            updateCharacterCount();
 
-    const buttonIcon =
-        document.getElementById("buttonIcon");
+            textArea.focus();
 
-    const loading =
-        document.getElementById("loadingCard");
-
-
-    button.disabled = true;
-
-    buttonText.textContent =
-        "Processing...";
-
-    buttonIcon.textContent =
-        "◌";
-
-    button.classList.add("loading");
-
-    loading.style.display =
-        "flex";
+        }
+    );
 
 }
 
 
 
-// ==========================================
-// Copy Translation
-// ==========================================
+if (form) {
 
-function copyTranslation() {
+    form.addEventListener(
+        "submit",
+        function (event) {
 
-    const text =
-        document.getElementById("translatedText");
+            const text =
+                textArea.value.trim();
 
-    const button =
-        document.getElementById("copyButton");
+            const selectedLanguage =
+                document.querySelector(
+                    'input[name="language"]:checked'
+                );
+
+            if (!text) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please enter some English text."
+                );
+
+                textArea.focus();
+
+                return;
+
+            }
 
 
-    navigator.clipboard
-        .writeText(text.innerText)
-        .then(() => {
+            if (!selectedLanguage) {
 
-            button.innerHTML =
-                "<span>✓</span> Copied";
+                event.preventDefault();
 
-            setTimeout(() => {
+                alert(
+                    "Please select a target language."
+                );
 
-                button.innerHTML =
-                    "<span>▣</span> Copy";
+                return;
 
-            }, 2000);
+            }
 
-        });
+
+            if (text.length > 3000) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please keep the text below 3000 characters."
+                );
+
+                return;
+
+            }
+
+
+            if (translateButton) {
+
+                translateButton.disabled = true;
+
+            }
+
+
+            if (buttonText) {
+
+                buttonText.textContent =
+                    "Processing...";
+
+            }
+
+
+            if (loadingCard) {
+
+                loadingCard.style.display =
+                    "flex";
+
+            }
+
+        }
+    );
+
+}
+
+
+
+const copyButton =
+    document.getElementById("copyButton");
+
+
+if (copyButton) {
+
+    copyButton.addEventListener(
+        "click",
+        async function () {
+
+            const result =
+                document.getElementById(
+                    "translationText"
+                );
+
+            if (!result) {
+                return;
+            }
+
+            const text =
+                result.innerText.trim();
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    text
+                );
+
+                copyButton.textContent =
+                    "Copied!";
+
+                setTimeout(
+                    function () {
+
+                        copyButton.textContent =
+                            "Copy";
+
+                    },
+                    1500
+                );
+
+            } catch (error) {
+
+                copyButton.textContent =
+                    "Copy failed";
+
+                setTimeout(
+                    function () {
+
+                        copyButton.textContent =
+                            "Copy";
+
+                    },
+                    1500
+                );
+
+            }
+
+        }
+    );
 
 }
 
