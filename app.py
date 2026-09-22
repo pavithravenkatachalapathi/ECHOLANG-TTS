@@ -1,167 +1,157 @@
 from flask import Flask, render_template, request
-from deep_translator import GoogleTranslator
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from gtts import gTTS
 from pathlib import Path
+from functools import lru_cache
 import uuid
 import os
-import time
+import gc
 
 
-# =========================================================
+# ============================================================
 # FLASK APPLICATION
-# =========================================================
+# ============================================================
 
 app = Flask(__name__)
 
-app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
+# Maximum text size: 5000 characters
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024
 
 
-# =========================================================
-# DIRECTORIES
-# =========================================================
+# ============================================================
+# PATH CONFIGURATION
+# ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 
 AUDIO_DIR = BASE_DIR / "static" / "audio"
 
+# Create audio directory automatically
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# =========================================================
+# ============================================================
 # SUPPORTED LANGUAGES
-# =========================================================
+# ============================================================
 
 LANGUAGES = {
     "hi": {
         "name": "Hindi",
         "flag": "🇮🇳",
+        "model": "Helsinki-NLP/opus-mt-en-hi",
         "tts": "hi"
     },
 
     "es": {
         "name": "Spanish",
         "flag": "🇪🇸",
+        "model": "Helsinki-NLP/opus-mt-en-es",
         "tts": "es"
     },
 
     "fr": {
         "name": "French",
         "flag": "🇫🇷",
+        "model": "Helsinki-NLP/opus-mt-en-fr",
         "tts": "fr"
     },
 
     "de": {
         "name": "German",
         "flag": "🇩🇪",
+        "model": "Helsinki-NLP/opus-mt-en-de",
         "tts": "de"
     }
 }
 
 
-# =========================================================
-# TRANSLATION
-# =========================================================
+# ============================================================
+# LOAD TRANSLATION MODEL
+# ============================================================
+
+@lru_cache(maxsize=1)
+def get_translator(language_code):
+
+    if language_code not in LANGUAGES:
+        raise ValueError("Unsupported language")
+
+    model_name = LANGUAGES[language_code]["model"]
+
+    print("=" * 60)
+    print(f"Loading model: {model_name}")
+    print("=" * 60)
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name
+    )
+
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        model_name
+    )
+
+    # Evaluation mode
+    model.eval()
+
+    print("Model loaded successfully.")
+    print("=" * 60)
+
+    return tokenizer, model
+
+
+# ============================================================
+# TRANSLATION FUNCTION
+# ============================================================
 
 def translate_text(text, language_code):
 
-    if language_code not in LANGUAGES:
-        raise ValueError("Unsupported language selected.")
+    tokenizer, model = get_translator(language_code)
 
-    last_error = None
-
-    for attempt in range(2):
-
-        try:
-
-            translator = GoogleTranslator(
-                source="en",
-                target=language_code
-            )
-
-            result = translator.translate(text)
-
-            if not result:
-                raise ValueError(
-                    "Translation service returned an empty result."
-                )
-
-            return result
-
-        except Exception as e:
-
-            last_error = e
-
-            if attempt == 0:
-                time.sleep(1)
-
-    raise RuntimeError(
-        f"Translation failed: {str(last_error)}"
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=512
     )
 
+    generated_tokens = model.generate(
+        **inputs,
+        max_length=512,
+        num_beams=2
+    )
 
-# =========================================================
+    translated_text = tokenizer.decode(
+        generated_tokens[0],
+        skip_special_tokens=True
+    )
+
+    return translated_text.strip()
+
+
+# ============================================================
 # TEXT TO SPEECH
-# =========================================================
+# ============================================================
 
 def generate_audio(text, language_code):
-
-    if not text:
-        raise ValueError("No translated text available.")
-
-    if language_code not in LANGUAGES:
-        raise ValueError("Unsupported TTS language.")
 
     filename = f"echolang_{uuid.uuid4().hex}.mp3"
 
     filepath = AUDIO_DIR / filename
 
-    last_error = None
-
-    for attempt in range(2):
-
-        try:
-
-            speech = gTTS(
-                text=text,
-                lang=LANGUAGES[language_code]["tts"],
-                slow=False
-            )
-
-            speech.save(str(filepath))
-
-            if not filepath.exists():
-                raise RuntimeError(
-                    "Audio file was not created."
-                )
-
-            if filepath.stat().st_size == 0:
-                raise RuntimeError(
-                    "Generated audio file is empty."
-                )
-
-            return filename
-
-        except Exception as e:
-
-            last_error = e
-
-            try:
-                if filepath.exists():
-                    filepath.unlink()
-            except Exception:
-                pass
-
-            if attempt == 0:
-                time.sleep(1)
-
-    raise RuntimeError(
-        f"Text-to-speech failed: {str(last_error)}"
+    speech = gTTS(
+        text=text,
+        lang=language_code,
+        slow=False
     )
 
+    speech.save(str(filepath))
 
-# =========================================================
-# HOME
-# =========================================================
+    return f"audio/{filename}"
+
+
+# ============================================================
+# HOME ROUTE
+# ============================================================
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -171,70 +161,62 @@ def home():
 
     text = ""
     language = ""
+
     language_name = ""
     language_flag = ""
 
     error_message = None
 
+    # --------------------------------------------------------
+    # POST REQUEST
+    # --------------------------------------------------------
+
     if request.method == "POST":
 
-        try:
+        text = request.form.get(
+            "text",
+            ""
+        ).strip()
 
-            text = request.form.get(
-                "text",
-                ""
-            ).strip()
+        language = request.form.get(
+            "language",
+            ""
+        ).strip()
 
-            language = request.form.get(
-                "language",
-                ""
-            ).strip()
+        # ----------------------------------------------------
+        # INPUT VALIDATION
+        # ----------------------------------------------------
 
-            # -------------------------------------------------
-            # VALIDATION
-            # -------------------------------------------------
+        if not text:
 
-            if not text:
+            error_message = (
+                "Please enter some English text."
+            )
 
-                error_message = (
-                    "Please enter some English text."
-                )
+        elif language not in LANGUAGES:
 
-            elif len(text) > 3000:
+            error_message = (
+                "Please select a valid target language."
+            )
 
-                error_message = (
-                    "Please keep the text below 3000 characters."
-                )
+        else:
 
-            elif language not in LANGUAGES:
+            language_info = LANGUAGES[language]
 
-                error_message = (
-                    "Please select a valid target language."
-                )
+            language_name = language_info["name"]
+            language_flag = language_info["flag"]
 
-            else:
+            # ------------------------------------------------
+            # TRANSLATION
+            # ------------------------------------------------
 
-                language_info = LANGUAGES[language]
+            try:
 
-                language_name = language_info["name"]
-                language_flag = language_info["flag"]
-
-                # -------------------------------------------------
-                # TRANSLATION
-                # -------------------------------------------------
-
-                print()
-                print("=" * 55)
-                print("ECHOLANG - TRANSLATION")
-                print("=" * 55)
-
-                print(
-                    f"Target Language : {language_name}"
-                )
-
-                print(
-                    f"Input Text      : {text[:100]}"
-                )
+                print("=" * 60)
+                print("Translation started")
+                print(f"Target language: {language_name}")
+                print(f"Input: {text}")
+                print("=" * 60)
 
                 translated_text = translate_text(
                     text,
@@ -242,78 +224,86 @@ def home():
                 )
 
                 print(
-                    f"Translated Text : {translated_text}"
+                    f"Translation: {translated_text}"
                 )
 
-                # -------------------------------------------------
-                # TEXT TO SPEECH
-                # -------------------------------------------------
+                print("Translation completed.")
 
-                print("Generating speech...")
+            except Exception as e:
 
-                filename = generate_audio(
-                    translated_text,
-                    language
+                print("=" * 60)
+                print("TRANSLATION ERROR")
+                print(type(e).__name__)
+                print(str(e))
+                print("=" * 60)
+
+                error_message = (
+                    "Translation could not be completed. "
+                    "Please try again."
                 )
 
-                audio_file = f"audio/{filename}"
+            # ------------------------------------------------
+            # TEXT TO SPEECH
+            # ------------------------------------------------
 
-                print(
-                    f"Audio generated : {filename}"
-                )
+            if translated_text:
 
-                print("=" * 55)
-                print("REQUEST COMPLETED")
-                print("=" * 55)
+                try:
 
-        except Exception as e:
+                    print("=" * 60)
+                    print("Generating speech...")
+                    print("=" * 60)
 
-            # -------------------------------------------------
-            # IMPORTANT:
-            # Never allow a normal application error to
-            # crash the Flask request.
-            # -------------------------------------------------
+                    audio_file = generate_audio(
+                        translated_text,
+                        language_info["tts"]
+                    )
 
-            print()
-            print("=" * 55)
-            print("ECHOLANG ERROR")
-            print("=" * 55)
+                    print(
+                        f"Audio generated: {audio_file}"
+                    )
 
-            print(
-                f"Error Type : {type(e).__name__}"
-            )
+                except Exception as e:
 
-            print(
-                f"Error      : {str(e)}"
-            )
+                    print("=" * 60)
+                    print("TTS ERROR")
+                    print(type(e).__name__)
+                    print(str(e))
+                    print("=" * 60)
 
-            print("=" * 55)
+                    # TTS failure should NOT destroy
+                    # the translation result.
+                    audio_file = None
 
-            translated_text = None
-            audio_file = None
 
-            error_message = (
-                "Unable to process the request right now. "
-                "Please try again."
-            )
+    # ========================================================
+    # RENDER PAGE
+    # ========================================================
 
     return render_template(
         "index.html",
+
         translated_text=translated_text,
+
         audio_file=audio_file,
+
         text=text,
+
         language=language,
+
         language_name=language_name,
+
         language_flag=language_flag,
+
         error_message=error_message
     )
 
 
-# =========================================================
+# ============================================================
 # HEALTH CHECK
-# =========================================================
+# ============================================================
 
-@app.route("/health")
+@app.route("/health", methods=["GET"])
 def health():
 
     return {
@@ -323,9 +313,9 @@ def health():
     }, 200
 
 
-# =========================================================
+# ============================================================
 # ERROR HANDLERS
-# =========================================================
+# ============================================================
 
 @app.errorhandler(413)
 def request_too_large(error):
@@ -338,34 +328,17 @@ def request_too_large(error):
         language="",
         language_name="",
         language_flag="",
-        error_message=(
-            "The submitted text is too large. "
-            "Please use a shorter text."
-        )
+        error_message="Text is too large. Please enter a shorter text."
     ), 413
-
-
-@app.errorhandler(404)
-def page_not_found(error):
-
-    return render_template(
-        "index.html",
-        translated_text=None,
-        audio_file=None,
-        text="",
-        language="",
-        language_name="",
-        language_flag="",
-        error_message="The requested page was not found."
-    ), 404
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
 
-    print(
-        f"Internal server error: {error}"
-    )
+    print("=" * 60)
+    print("INTERNAL SERVER ERROR")
+    print(str(error))
+    print("=" * 60)
 
     return render_template(
         "index.html",
@@ -375,16 +348,13 @@ def internal_server_error(error):
         language="",
         language_name="",
         language_flag="",
-        error_message=(
-            "Something went wrong. "
-            "Please try again."
-        )
+        error_message="Something went wrong. Please try again."
     ), 500
 
 
-# =========================================================
-# LOCAL DEVELOPMENT
-# =========================================================
+# ============================================================
+# APPLICATION START
+# ============================================================
 
 if __name__ == "__main__":
 
@@ -395,24 +365,17 @@ if __name__ == "__main__":
         )
     )
 
-    print()
-    print("=" * 55)
-    print("ECHOLANG - MULTILINGUAL TEXT TO SPEECH")
-    print("=" * 55)
+    print("=" * 60)
+    print("             ECHOLANG")
+    print("     Multilingual Translation + TTS")
+    print("=" * 60)
 
-    print(
-        f"Project Folder : {BASE_DIR}"
-    )
+    print(f"Project directory : {BASE_DIR}")
+    print(f"Audio directory   : {AUDIO_DIR}")
+    print(f"Audio exists      : {AUDIO_DIR.exists()}")
+    print(f"Port              : {port}")
 
-    print(
-        f"Audio Folder   : {AUDIO_DIR}"
-    )
-
-    print(
-        f"Port           : {port}"
-    )
-
-    print("=" * 55)
+    print("=" * 60)
 
     app.run(
         host="0.0.0.0",
