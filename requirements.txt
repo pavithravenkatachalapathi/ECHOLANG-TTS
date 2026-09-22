@@ -1,7 +1,4 @@
-Flask
-transformers
+tensorflow
 torch
+transformers
 sentencepiece
-gTTS
-sacremoses
-gunicorn
