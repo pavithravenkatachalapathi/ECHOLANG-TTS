@@ -1,4 +1,43 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment Variables
 .env
-static/audio/*.mp3
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flask
+instance/
+
+# Generated Audio Files
+static/audio/*
+!static/audio/.gitkeep
+
+# Hugging Face / Transformers Cache
+.cache/
+huggingface/
+transformers_cache/
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.temp
