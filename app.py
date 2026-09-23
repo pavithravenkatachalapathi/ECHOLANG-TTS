@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from gtts import gTTS
 from pathlib import Path
@@ -86,7 +87,8 @@ def get_translator(language_code):
     )
 
     model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name
+        model_name,
+        low_cpu_mem_usage=True
     )
 
     # Evaluation mode
@@ -114,16 +116,20 @@ def translate_text(text, language_code):
         max_length=512
     )
 
-    generated_tokens = model.generate(
-        **inputs,
-        max_length=512,
-        num_beams=2
-    )
+    with torch.no_grad():
+        generated_tokens = model.generate(
+            **inputs,
+            max_length=512,
+            num_beams=2
+        )
 
     translated_text = tokenizer.decode(
         generated_tokens[0],
         skip_special_tokens=True
     )
+
+    del inputs, generated_tokens
+    gc.collect()
 
     return translated_text.strip()
 
