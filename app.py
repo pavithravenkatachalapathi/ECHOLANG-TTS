@@ -15,6 +15,10 @@ import gc
 
 app = Flask(__name__)
 
+# Reduce memory overhead: cap torch's internal thread pool (each thread
+# allocates its own working buffers, which adds up on low-RAM hosts).
+torch.set_num_threads(1)
+
 # Maximum text size: 5000 characters
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024
 
@@ -120,7 +124,7 @@ def translate_text(text, language_code):
         generated_tokens = model.generate(
             **inputs,
             max_length=512,
-            num_beams=2
+            num_beams=1
         )
 
     translated_text = tokenizer.decode(
